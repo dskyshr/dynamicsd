@@ -10,9 +10,6 @@ from django.urls import reverse_lazy
 from django.urls import reverse_lazy
 
 from django.views.generic import TemplateView
-#from .models import(
-#    Conditions,
-#)
 from .forms import(
     ConditionsForm,
 )
@@ -23,7 +20,7 @@ import pprint     # debug時のリスト・辞書確認用
 import time       # debug時のsleep用
 import statistics # 統計計算用
 
-# TOP画面
+# TOP
 ## session操作時は複雑なので、クラスビューではなく関数ビューを使う
 def TopView(request):
     template_name = './top/top.html'
@@ -69,14 +66,11 @@ def TopView(request):
                x = (o_max / participants) * index
 
                # 初期選択肢分布から自分の初期選択肢数を得る
-               # ①線形型
-               if   initial_dist == 1 :
+               if   initial_dist == 1 : # ①線形型
                   options = -x + o_max
-               # ②凸型
-               elif initial_dist == 2 :
+               elif initial_dist == 2 : # ②凸型
                   options = -math.sqrt(pow(o_max,2) - pow((x - o_max),2)) + o_max
-               # ③凹型
-               elif initial_dist == 3 :
+               elif initial_dist == 3 : # ③凹型
                   options = math.sqrt(pow(o_max,2) - pow(x,2))
 
                # 選択肢数の小数点以下切り上げ
@@ -84,7 +78,7 @@ def TopView(request):
 
                #pp.pprint(str(options)+',')
 
-               # 選択肢数が3未満なら選好数も3未満
+               # 選択肢数が申告数上限未満なら選好数も選択肢数
                his_o_limit = o_limit
                if options < his_o_limit :
                   his_o_limit = options
@@ -105,7 +99,6 @@ def TopView(request):
 
                # クラス情報に申告学生を格納
                #pp.pprint(students[index]['preference'])
-               #print(classes[students[index]['preference'][0]])
                if len(students[index]['preference']) >= 1:
                   classes[students[index]['preference'][0]]['declared'][0].append(index) # 第0希望
                if len(students[index]['preference']) >= 2:
@@ -115,8 +108,6 @@ def TopView(request):
 
             #pp.pprint(students)
 
-            # SD Allocation ##################
-
             stats     = { # その他集計
                'exit'           : [], # 期別市場退出者数
                'exit_total'     : 0,  # 累計退出者数
@@ -124,8 +115,10 @@ def TopView(request):
                'total_term_aly' : [], # 平均や分散計算用の配列
             }
 
+            # Matching Start ##################
+
             for i_t in range(t) :
-               pp.pprint('<-- ' + str(i_t) + 'th term. -------------------------------------------->')
+               pp.pprint('<-- ' + str(i_t) + 'th Term. -------------------------------------------->')
                
                
                capacity_rem  = {} # 残定員数初期化
@@ -180,31 +173,14 @@ def TopView(request):
                                       #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
                                       #print(classes[cancel_class_id]['declared'][i_preference])
                                 
-                                # 選択肢が0になった学生は市場から退出
+
                                 #print('student_id='+str(student_id))
                                 students[student_id]['options'] = students[student_id]['options'] - 1 
-                                if students[student_id]['options'] == 0 :
-                                   students[student_id]['end_term'] = i_t
-                                   #pp.pprint('student_id:' + str(student_id) + 'が市場から退出しました。')
-                                   
 
-                                   # 退出者数を記録
-                                   stats['exit'][i_t]  = stats['exit'][i_t] + 1
-                                   stats['exit_total'] = stats['exit_total'] + 1
+                                # 選択肢が0になった学生は市場から退出
+                                leave_market(students, student_id, stats, i_t)
 
-                                   # 退出までの期間を記録
-                                   total_term = i_t + 1 - students[student_id]['start_term']
-                                   if total_term in stats['total_term_dict'].keys() :
-                                      stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
-                                   else :
-                                      stats['total_term_dict'][total_term] = 1
-                                   # 
-                                   stats['total_term_aly'].append(total_term)
-
-                                   # dictから削除
-                                   students.pop(student_id)
-
-                             # 定員を減算
+                             # 残定員を減算
                              capacity_rem[class_id] = capacity_rem[class_id] - len(declared)
                              if capacity_rem[class_id] == 0 :
                                 #pp.pprint('class_id=' + str(class_id) + 'は定員に達したためマッチングを終了します。')
@@ -272,29 +248,12 @@ def TopView(request):
                                                 classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                                 #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                          # 選択肢が0になった学生は市場から退出
                                           students[student_id]['options'] = students[student_id]['options'] - 1 
-                                          if students[student_id]['options'] == 0 :
-                                             students[student_id]['end_term'] = i_t
-                                             #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'が市場から退出しました。')
 
-                                             # 退出者数を記録
-                                             stats['exit'][i_t]  = stats['exit'][i_t] + 1
-                                             stats['exit_total'] = stats['exit_total'] + 1
+                                          # 選択肢が0になった学生は市場から退出
+                                          leave_market(students, student_id, stats, i_t)
 
-                                             # 退出までの期間を記録
-                                             total_term = i_t + 1 - students[student_id]['start_term']
-                                             if total_term in stats['total_term_dict'].keys() :
-                                                stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
-                                             else :
-                                                stats['total_term_dict'][total_term] = 1
-                                             stats['total_term_aly'].append(total_term)
-
-                                             # dictから削除
-                                             students.pop(student_id)
-
-
-                                       # 定員を減算
+                                       # 残定員を減算
                                        capacity_rem[class_id] = capacity_rem[class_id] - len(order_by_options[i_order]['student_id'])
                                        if capacity_rem[class_id] == 0 :
                                           #pp.pprint('class_id=' + str(class_id) + 'は定員に達したためマッチングを終了します。')
@@ -358,28 +317,12 @@ def TopView(request):
                                                       classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                                       #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                                # 選択肢が0になった学生は市場から退出
                                                 students[student_id]['options'] = students[student_id]['options'] - 1 
-                                                if students[student_id]['options'] == 0 :
-                                                   students[student_id]['end_term'] = i_t
-                                                   #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'が市場から退出しました。')
 
-                                                   # 退出者数を記録
-                                                   stats['exit'][i_t]  = stats['exit'][i_t] + 1
-                                                   stats['exit_total'] = stats['exit_total'] + 1
+                                                # 選択肢が0になった学生は市場から退出
+                                                leave_market(students, student_id, stats, i_t)
 
-                                                   # 退出までの期間を記録
-                                                   total_term = i_t + 1 - students[student_id]['start_term']
-                                                   if total_term in stats['total_term_dict'].keys() :
-                                                      stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
-                                                   else :
-                                                      stats['total_term_dict'][total_term] = 1
-                                                   stats['total_term_aly'].append(total_term)
-
-                                                   # dictから削除
-                                                   students.pop(student_id)
-
-                                             # 定員を減算
+                                             # 残定員を減算
                                              capacity_rem[class_id] = capacity_rem[class_id] - len(order_by_text_credits[i_order]['student_id'])
                                              if capacity_rem[class_id] == 0 :
                                                 #pp.pprint('class_id=' + str(class_id) + 'は定員に達したためマッチングを終了します。')
@@ -416,26 +359,10 @@ def TopView(request):
                                                          classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                                          #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                                   # 選択肢が0になった学生は市場から退出
                                                    students[student_id]['options'] = students[student_id]['options'] - 1 
-                                                   if students[student_id]['options'] == 0 :
-                                                      students[student_id]['end_term'] = i_t
-                                                      #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'が市場から退出しました。')
 
-                                                      # 退出者数を記録
-                                                      stats['exit'][i_t]  = stats['exit'][i_t] + 1
-                                                      stats['exit_total'] = stats['exit_total'] + 1
-
-                                                      # 退出までの期間を記録
-                                                      total_term = i_t + 1 - students[student_id]['start_term']
-                                                      if total_term in stats['total_term_dict'].keys() :
-                                                         stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
-                                                      else :
-                                                         stats['total_term_dict'][total_term] = 1
-                                                      stats['total_term_aly'].append(total_term)
-
-                                                      # dictから削除
-                                                      students.pop(student_id)
+                                                   # 選択肢が0になった学生は市場から退出
+                                                   leave_market(students, student_id, stats, i_t)
 
                                                 # 外れた学生
                                                 else :
@@ -449,7 +376,7 @@ def TopView(request):
                                                    students[student_id]['text_credits'] = students[student_id]['text_credits'] + new_credit[0]
                                                    #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'は、'+ str(new_credit[0]) +'個のテキスト科目を取得しました。')
 
-                                             # 定員を減算
+                                             # 残定員を減算
                                              capacity_rem[class_id] = capacity_rem[class_id] - len(i_rand)
 
                                              if capacity_rem[class_id] == 0 :
@@ -475,7 +402,7 @@ def TopView(request):
 
                                 for i_student,student_id in enumerate(classes[class_id]['declared'][i_declared]) :
 
-                                   # 当選した学生
+                                   # 当選した学生の処理（外れた学生は何もしない）
                                    if i_student in i_rand :
                                       #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'が当選しました。')
 
@@ -492,28 +419,12 @@ def TopView(request):
                                             classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                             #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                      # 選択肢が0になった学生は市場から退出
                                       students[student_id]['options'] = students[student_id]['options'] - 1 
-                                      if students[student_id]['options'] == 0 :
-                                         students[student_id]['end_term'] = i_t
-                                         #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'が市場から退出しました。')
 
-                                         # 退出者数を記録
-                                         stats['exit'][i_t]  = stats['exit'][i_t] + 1
-                                         stats['exit_total'] = stats['exit_total'] + 1
+                                      # 選択肢が0になった学生は市場から退出
+                                      leave_market(students, student_id, stats, i_t)
 
-                                         # 退出までの期間を記録
-                                         total_term = i_t + 1 - students[student_id]['start_term']
-                                         if total_term in stats['total_term_dict'].keys() :
-                                            stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
-                                         else :
-                                            stats['total_term_dict'][total_term] = 1
-                                         stats['total_term_aly'].append(total_term)
-
-                                         # dictから削除
-                                         students.pop(student_id)
-
-                                # 定員を減算
+                                # 残定員を減算
                                 capacity_rem[class_id] = capacity_rem[class_id] - len(i_rand)
 
                                 if capacity_rem[class_id] == 0 :
@@ -530,9 +441,9 @@ def TopView(request):
 
                        # 定員に達していたら次のクラスへ
                        if capacity_rem[class_id] == 0 :
-                           continue # 次のクラスへ
+                           continue
 
-               pp.pprint('第'+str(i_t)+'期の退出者は'+ str(stats['exit'][i_t]) +'名です。')
+               pp.pprint('第'+str(i_t)+'期の退出者: '+ str(stats['exit'][i_t]) +'名')
                #pp.pprint('累計退出者は'+ str(stats['exit_total']) +'名です。')
                
 
@@ -549,7 +460,7 @@ def TopView(request):
                        'student_id' : max_student_id + index + 1, 
                        'options'    : o_max, # 新規参入者は最大選択肢数を持つ
                        'start_term' : i_t + 1 ,
-                       'end_term'   : '',
+                       #'end_term'   : '',
                        'preference' : [],
                        'allocated'  : [],
                        'text_credits' : 0,
@@ -632,7 +543,6 @@ def TopView(request):
             pp.pprint('===================================')
             #pp.pprint(str(len(students)) + '名')
 
-
     print('シミュレーション終了')
 
         #    # 保存処理
@@ -655,6 +565,8 @@ def TopView(request):
     }
     return render(request, template_name, context)
 
+
+# Functions ###############################################################
 
 # 重複なし乱数
 # a:最小の数
@@ -687,7 +599,8 @@ def rand_ints_nodup_without_allocated(a, b, k, e):
 
 def set_current_classes(o_max, o_max_available) :
 
-   available_classes = [] # 初期化
+   # 今期選択可能なクラスIDを抽選
+   available_classes = []
    available_classes = rand_ints_nodup(0, o_max, o_max_available)
 
    # 当期のクラス情報をセット
@@ -703,8 +616,27 @@ def set_current_classes(o_max, o_max_available) :
          'class_id' : index,    # 念のため入れておく
          'capacity' : capacity, # 定員数
          #'capacity' : 10, # debug
-         'declared' : [ [], [], [] ], # 第1～第3希望として申告した学生
+         'declared' : [ [], [], [] ], # 第1～第3希望として申告した学生IDを格納する配列
       };
 
    return classes
 
+def leave_market(students, student_id, stats, i_t) :
+   if students[student_id]['options'] == 0 :
+      students[student_id]['end_term'] = i_t
+      #print('student_id:' + str(student_id) + 'が市場から退出しました。')
+
+      # 退出者数を記録
+      stats['exit'][i_t]  += 1
+      stats['exit_total'] += 1
+
+      # 退出までの期間を記録
+      total_term = (i_t + 1) - students[student_id]['start_term']
+      if total_term in stats['total_term_dict'].keys() :
+         stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
+      else :
+         stats['total_term_dict'][total_term] = 1
+      stats['total_term_aly'].append(total_term)
+
+      # dictから削除
+      students.pop(student_id)
