@@ -1,0 +1,86 @@
+{% load static %}{% load i18n %}<!doctype html>
+<html lang="ja">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <!-- Bootstrap CSS customized -->
+    <link rel="stylesheet" href="{% static 'common/css/bootstrap.min.css' %}">
+
+    <!-- Common CSS -->
+    <link rel="stylesheet" href="{% static 'common/css/item.css' %}">
+    <link rel="stylesheet" href="{% static 'common/css/pace.css' %}">
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"
+            integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"
+            integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm"
+            crossorigin="anonymous"></script>
+
+    <!-- datepicker 用-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/base/jquery-ui.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1/i18n/jquery.ui.datepicker-ja.min.js"></script>
+
+    <!-- Loading用-->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
+
+    <!-- Common JS -->
+    <script type="text/javascript" src="{% static 'common/js/item.js' %}"></script>
+    <script type="text/javascript" src="{% static 'common/js/plugins/responsive-paginate.js' %}"></script>
+    <script type="text/javascript" src="{% static 'common/js/plugins/easytimer.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'common/js/jquery.selection.js' %}"></script>
+
+
+    <title>Dynamic SD Allocation</title>
+</head>
+<body>
+    <!-- ナビバー -->
+<!--
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="/">TOP</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li>
+		Menu1
+          </li>
+          <li>
+		Menu2
+          </li>
+          <li>
+		Menu3
+          </li>
+          <li>
+		Menu3
+          </li>
+        </ul>
+      </div>
+    </nav>
+-->
+    <!-- メッセージフレームワーク -->
+    {% if messages %}
+      <!--<button class="delete" type="button"></button>-->
+      {% for message in messages %}
+      <p class="text-center p-2" style="background: #dfd;"> {{ message }}</p>
+      {% endfor %}
+    {% endif %}
+
+    <!-- メインコンテント -->
+    <div class="container mt-3">
+        {% block content %}{% endblock %}
+    </div>
+
+
+</body>
+</html>

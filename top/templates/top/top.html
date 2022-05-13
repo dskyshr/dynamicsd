@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+{{ form.certifications.errors }}
+<div class="mx-auto h4 text-center p-2">
+	 Simulator for Dynamic SD Allocation
+</div>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="conditions_form">
+                {{ form|crispy }}
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary mx-auto d-block w-25">Allocate</button>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        {{ initial_dist }}
+    </div>
+    <div class="row">
+        {{ result }}
+    </div>
+</div>
+
+{% endblock %}
