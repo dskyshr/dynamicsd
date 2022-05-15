@@ -49,8 +49,8 @@ def set_current_classes(o_max, o_max_available) :
          capacity = 100
       classes[index] = { # keyがclass_id
          'class_id' : index,    # 念のため入れておく
-         #'capacity' : capacity, # 定員数
-         'capacity' : 10, # debug
+         'capacity' : capacity, # 定員数
+         #'capacity' : 10,       # debug
          'declared' : [ [], [], [] ], # 第1～第3希望として申告した学生IDを格納する配列
       };
 
@@ -60,7 +60,8 @@ def set_current_classes(o_max, o_max_available) :
 def leave_market(students, student_id, stats, i_t) :
    if students[student_id]['options'] == 0 :
       students[student_id]['end_term'] = i_t
-      pp.pprint('student_id:' + str(student_id) + 'が市場から退出しました。')
+      #pp.pprint('student_id:' + str(student_id) + 'が市場から退出しました。')
+      #pp.pprint('student_id:' + str(student_id) + 'の退出までの獲得利得は'+str(students[student_id]['utils'])+'でした。')
 
       # 退出者数を記録
       stats['exit'][i_t]  += 1
@@ -69,10 +70,22 @@ def leave_market(students, student_id, stats, i_t) :
       # 退出までの期間を記録
       total_term = (i_t + 1) - students[student_id]['start_term']
       if total_term in stats['total_term_dict'].keys() :
-         stats['total_term_dict'][total_term] = stats['total_term_dict'][total_term] + 1
+         stats['total_term_dict'][total_term] += 1
       else :
          stats['total_term_dict'][total_term] = 1
       stats['total_term_aly'].append(total_term)
+
+      # 獲得利得を記録
+      stats['utils'][i_t]  += students[student_id]['utils']
+      stats['utils_total'] += students[student_id]['utils']
+
+      # 退出までの獲得利得を記録
+      if students[student_id]['utils'] in stats['total_utils_dict'].keys() :
+         stats['total_utils_dict'][students[student_id]['utils']] += 1
+      else :
+         stats['total_utils_dict'][students[student_id]['utils']] = 1
+      stats['total_utils_aly'].append(students[student_id]['utils'])
+
 
       # dictから削除
       students.pop(student_id)
