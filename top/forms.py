@@ -36,7 +36,12 @@ INIT_DIST_CHOICES = (
 # メカニズム
 MECHANISM = (
     (1, "複合優先順序メカニズム"),
-    (2, "LKC方式(RSD+ボストン)"),
+    (2, "確率的ボストンメカニズム"),
+)
+# CSVファイルの出力
+CSV_WRITE_MODE = (
+    (1, "New"),
+    (2, "Append"),
 )
 
 class ConditionsForm(forms.Form):
@@ -58,4 +63,15 @@ class ConditionsForm(forms.Form):
     mechanism = forms.ChoiceField(
         label='Mechanism',
         choices=MECHANISM,
+    )
+    csv = forms.BooleanField(
+        label='Print as CSV file',
+        required=False,
+        disabled=False,
+        initial=1,
+    )
+    csv_write_mode = forms.ChoiceField(
+        label='CSV Writing Mode',
+        widget=forms.widgets.RadioSelect,
+        choices=CSV_WRITE_MODE,
     )

@@ -11,10 +11,12 @@ from .forms import(
     ConditionsForm,
 )
 import math, random, statistics
+import datetime
 import pprint     # debug時のリスト・辞書確認用
 import time       # debug時のsleep用
+import csv
 
-from top.mylib import mymodule as mm
+from .mylib import mymodule as mm
 
 
 # TOP
@@ -25,11 +27,11 @@ def TopView(request):
     pp = pprint.PrettyPrinter(indent=4) # debug用
 
     o_max = 20;            # 最大選択肢数
-    o_max_available = 40   # 1期あたりの選択可能クラス数(≒o_max/3)
+    o_max_available = 20   # 1期あたりの選択可能クラス数(≒実質class数/4)
     o_limit = 3;           # 1期あたり申告数上限
 
-    #o_max = 20;           # debug
-    #o_max_available = 40  # debug
+    #o_max = 5;           # debug
+    #o_max_available = 5  # debug
 
     utils = { # 獲得利得
        0 : 3, # 第1希望
@@ -55,8 +57,14 @@ def TopView(request):
             initial_dist = int(request.POST['initial_dist'])
             t            = int(request.POST['term'])
             mechanism    = int(request.POST['mechanism'])
+            csv_req      = request.POST.get('csv',)
+            csv_write_mode = int(request.POST['csv_write_mode'])
+            csv_path     = './top/log/result.csv'
+            #print(csv_req)
+            #print(csv_write_mode)
+
             if   mechanism == 1 : mechanism_name = '複合優先順序メカニズム'
-            elif mechanism == 2 : mechanism_name = 'LKC方式'
+            elif mechanism == 2 : mechanism_name = '確率的ボストンメカニズム'
 
             # クラスは各期何が開催されるかわからないのでo_maxのなかからランダムにo_max_available個抽出
             classes = mm.set_current_classes(o_max, o_max_available)
@@ -383,14 +391,21 @@ def TopView(request):
                                                 # 外れた学生
                                                 else :
                                                    #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'は当選しませんでした。')
-                                                   # テキスト科目単位取得確率
-                                                   #new_credit = [1]                    # 確率1で1を得る
-                                                   #new_credit = [2]                    # 確率1で2を得る
-                                                   new_credit = mm.rand_ints_nodup(0,1,1) # 確率1/2ずつで(0,1)を得る
-                                                   #new_credit = rand_ints_nodup(0,2,1) # 確率1/3ずつで(0,1,2)を得る
-                                                   #new_credit = rand_ints_nodup(0,3,1) # 確率1/4ずつで(0,1,2,3)を得る
-                                                   students[student_id]['text_credits'] = students[student_id]['text_credits'] + new_credit[0]
-                                                   #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'は、'+ str(new_credit[0]) +'個のテキスト科目を取得しました。')
+                                                   #pp.pprint('現在第' + str(i_declared) + '希望')
+                                                   #pp.pprint('選好の数:' + str(len(students[student_id]['preference'])))
+
+                                                   # 次の希望がないとき
+                                                   if len(students[student_id]['preference']) == (i_declared + 1) :
+                                                      #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'は今期マッチできませんでした。')
+                                                      # テキスト科目単位取得確率
+                                                      #new_credit = [0]                    # 確率1で0を得る
+                                                      new_credit = [1]                    # 確率1で1を得る
+                                                      #new_credit = [2]                    # 確率1で2を得る
+                                                      #new_credit = mm.rand_ints_nodup(0,1,1) # 確率1/2ずつで(0,1)を得る
+                                                      #new_credit = rand_ints_nodup(0,2,1) # 確率1/3ずつで(0,1,2)を得る
+                                                      #new_credit = rand_ints_nodup(0,3,1) # 確率1/4ずつで(0,1,2,3)を得る
+                                                      students[student_id]['text_credits'] += new_credit[0]
+                                                      #pp.pprint('student_id:' + str(students[student_id]['student_id']) + 'は、'+ str(new_credit[0]) +'個のテキスト科目を取得しました。')
 
                                              # 残定員を減算
                                              capacity_rem[class_id] = capacity_rem[class_id] - len(i_rand)
@@ -516,7 +531,7 @@ def TopView(request):
 
                      # 選好を抽選
                      preference = random.sample(classes_rem, k=his_o_limit) 
-                     #pp.pprint('今期の選好は、、')
+                     #pp.pprint('今期の選好は、')
                      #pp.pprint(preference)
 
                      """
@@ -555,7 +570,7 @@ def TopView(request):
             pp.pprint('使用メカニズム: ' + mechanism_name)
             pp.pprint('===================================')
             # 累計退出者数
-            pp.pprint('累計退出者数: '+ str(stats['exit_total']) +'名')
+            pp.pprint('累計退出者数: '+ str("{:,}".format(stats['exit_total'])) +'名')
             # 中央値を計算
             median = statistics.median(stats['total_term_aly'])
             pp.pprint('退出までの期間の中央値: '+'{:.0f}'.format(median) + '期')
@@ -567,19 +582,37 @@ def TopView(request):
             pp.pprint('退出までの期間の分散(母分散): '+'{:.4f}'.format(pvar))
             pp.pprint('===================================')
             # 累計獲得利得
-            pp.pprint('累計獲得利得: '+ str(stats['utils_total']))
+            pp.pprint('累計獲得利得: '+ str("{:,}".format(stats['utils_total'])))
             # 中央値を計算
-            median = statistics.median(stats['total_utils_aly'])
-            pp.pprint('退出までの獲得利得の中央値: '+'{:.0f}'.format(median))
+            median_u = statistics.median(stats['total_utils_aly'])
+            pp.pprint('退出までの獲得利得の中央値: '+'{:.0f}'.format(median_u))
             # 母分散を計算
-            mean = statistics.mean(stats['total_utils_aly'])
-            pp.pprint('退出までの獲得利得の平均: '+'{:.4f}'.format(mean))
+            mean_u = statistics.mean(stats['total_utils_aly'])
+            pp.pprint('退出までの獲得利得の平均: '+'{:.4f}'.format(mean_u))
             # 母分散を計算
-            pvar = statistics.pvariance(stats['total_utils_aly'])
-            pp.pprint('退出までの獲得利得の分散(母分散): '+'{:.4f}'.format(pvar))
+            pvar_u = statistics.pvariance(stats['total_utils_aly'])
+            pp.pprint('退出までの獲得利得の分散(母分散): '+'{:.4f}'.format(pvar_u))
             pp.pprint('===================================')
 
-    pp.pprint('シミュレーション終了')
+            if csv_req :
+               print(str("{:}".format(stats['exit_total'])) + ',' + '{:.0f}'.format(median) + ',' + '{:.4f}'.format(mean) + ',' +'{:.4f}'.format(pvar) + ',' + str("{:}".format(stats['utils_total'])) + ','+'{:.0f}'.format(median_u) + ',' + '{:.4f}'.format(mean_u) + ',' + '{:.4f}'.format(pvar_u))
+               line = [
+                 str("{:}".format(stats['exit_total'])), 
+                 '{:.0f}'.format(median),
+                 '{:.4f}'.format(mean),
+                 '{:.4f}'.format(pvar) ,
+                 str("{:}".format(stats['utils_total'])),
+                 '{:.0f}'.format(median_u),
+                 '{:.4f}'.format(mean_u),
+                 '{:.4f}'.format(pvar_u)
+               ]
+               if   csv_write_mode == 1 : csv_write_mode = 'w' # 新規
+               elif csv_write_mode == 2 : csv_write_mode = 'a' # 追記
+               with open(csv_path, csv_write_mode, newline='') as f:
+                  writer = csv.writer(f)
+                  writer.writerow(line)
+
+    pp.pprint('シミュレーション終了:' + str(datetime.datetime.now()))
 
         #    # 保存処理
         #    post.save()
@@ -596,7 +629,6 @@ def TopView(request):
 
     context = {
         'form': form,
-        #'initial_dist' : initial_dist,
-        #'result': students, 
+        'result_msg': 'シミュレーション終了 : ' + str(datetime.datetime.now()), 
     }
     return render(request, template_name, context)

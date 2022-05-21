@@ -3,7 +3,7 @@
 {% block content %}
 {{ form.certifications.errors }}
 <div class="mx-auto h4 text-center p-2">
-	Dynamic SD Allocation Simulator
+	 Simulator for Dynamic SD Allocation
 </div>
 <div class="container">
     <div class="row">
