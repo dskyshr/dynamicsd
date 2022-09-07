@@ -34,7 +34,10 @@ access to localhost:8000 on a browser.
 
 # Note
  
-I don't test environments under Linux and Mac.
+I did not test environments under Linux and Mac.
+
+If you choose "New" at "CSV Writing Mode", existing CSV file will be overwrited.
+
  
 # Author
  

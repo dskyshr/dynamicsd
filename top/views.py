@@ -26,6 +26,7 @@ def TopView(request):
     result = ""
     pp = pprint.PrettyPrinter(indent=4) # debug用
 
+    # Constant values
     o_max = 20;            # 最大選択肢数
     o_max_available = 20   # 1期あたりの選択可能クラス数(≒実質class数/4)
     o_limit = 3;           # 1期あたり申告数上限
@@ -33,7 +34,7 @@ def TopView(request):
     #o_max = 5;           # debug
     #o_max_available = 5  # debug
 
-    utils = { # 獲得利得
+    utils = { # 獲得効用
        0 : 3, # 第1希望
        1 : 2, # 第2希望
        2 : 1, # 第3希望
@@ -63,7 +64,7 @@ def TopView(request):
             #print(csv_req)
             #print(csv_write_mode)
 
-            if   mechanism == 1 : mechanism_name = '複合優先順序メカニズム'
+            if   mechanism == 1 : mechanism_name = '複合優先順序付き制約者優先SDメカニズム'
             elif mechanism == 2 : mechanism_name = '確率的ボストンメカニズム'
 
             # クラスは各期何が開催されるかわからないのでo_maxのなかからランダムにo_max_available個抽出
@@ -124,10 +125,10 @@ def TopView(request):
                'exit_total'       : 0,  # 累計退出者数
                'total_term_dict'  : {}, # key=退出までの期間, value=人数
                'total_term_aly'   : [], # 退出までの期間の平均や分散計算用
-               'utils'            : [], # 期別獲得利得
-               'utils_total'      : 0,  # 累計獲得利得
-               'total_utils_dict' : {}, # key=退出までの総利得, value=人数
-               'total_utils_aly'  : [], # 利得の平均や分散計算用
+               'utils'            : [], # 期別獲得効用
+               'utils_total'      : 0,  # 累計獲得効用
+               'total_utils_dict' : {}, # key=退出までの総効用, value=人数
+               'total_utils_aly'  : [], # 効用の平均や分散計算用
             }
 
             # Matching Start ##################
@@ -137,7 +138,7 @@ def TopView(request):
 
                capacity_rem  = {}            # 残定員数初期化
                stats['exit'].insert(i_t, 0)  # 退出者数初期化
-               stats['utils'].insert(i_t, 0) # 利得を初期化
+               stats['utils'].insert(i_t, 0) # 効用を初期化
                max_student_id = next(iter(reversed(students))) # 今期の学生の最大IDを取得しておく
 
                # 第1希望～第3希望
@@ -188,7 +189,7 @@ def TopView(request):
                                       #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
                                       #pp.pprint(classes[cancel_class_id]['declared'][i_preference])
                                 
-                                # 利得を獲得
+                                # 効用を獲得
                                 students[student_id]['utils'] += utils[i_declared]
 
                                 #pp.pprint('student_id='+str(student_id))
@@ -211,7 +212,6 @@ def TopView(request):
                              if mechanism == 1 :
                                  
                                  #pp.pprint('希望者を選択肢の少ない順に優先します。優先順序のリストを作成します。')
-                                 
 
                                  # 一時配列を作って申告学生を選択肢の少ない順にソート
                                  tmp_aly = []
@@ -265,7 +265,7 @@ def TopView(request):
                                                 classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                                 #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                          # 利得を獲得
+                                          # 効用を獲得
                                           students[student_id]['utils'] += utils[i_declared]
 
                                           students[student_id]['options'] -= 1 
@@ -335,7 +335,7 @@ def TopView(request):
                                                       classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                                       #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                                # 利得を獲得
+                                                # 効用を獲得
                                                 students[student_id]['utils'] += utils[i_declared]
 
                                                 students[student_id]['options'] -= 1 
@@ -380,7 +380,7 @@ def TopView(request):
                                                          classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                                          #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                                   # 利得を獲得
+                                                   # 効用を獲得
                                                    students[student_id]['utils'] += utils[i_declared]
 
                                                    students[student_id]['options'] -= 1 
@@ -450,7 +450,7 @@ def TopView(request):
                                             classes[cancel_class_id]['declared'][i_preference].remove(student_id);
                                             #pp.pprint('student_id:' + str(student_id) + 'は割当済みのため第'+ str(i_preference) +'希望のクラスをキャンセルしました。')
 
-                                      # 利得を獲得
+                                      # 効用を獲得
                                       students[student_id]['utils'] += utils[i_declared]
 
                                       students[student_id]['options'] -= 1 
@@ -563,7 +563,7 @@ def TopView(request):
             for total_term in stats['total_term_dict'].keys() :
                pp.pprint(str(total_term) + '期: ' + str(stats['total_term_dict'][total_term]) + '人')
             pp.pprint('===================================')
-            pp.pprint('退出までの獲得利得と人数は、')
+            pp.pprint('退出までの獲得効用と人数は、')
             for total_utils in stats['total_utils_dict'].keys() :
                pp.pprint(str(total_utils) + ': ' + str(stats['total_utils_dict'][total_utils]) + '人')
             pp.pprint('===================================')
@@ -581,17 +581,17 @@ def TopView(request):
             pvar = statistics.pvariance(stats['total_term_aly'])
             pp.pprint('退出までの期間の分散(母分散): '+'{:.4f}'.format(pvar))
             pp.pprint('===================================')
-            # 累計獲得利得
-            pp.pprint('累計獲得利得: '+ str("{:,}".format(stats['utils_total'])))
+            # 累計獲得効用
+            pp.pprint('累計獲得効用: '+ str("{:,}".format(stats['utils_total'])))
             # 中央値を計算
             median_u = statistics.median(stats['total_utils_aly'])
-            pp.pprint('退出までの獲得利得の中央値: '+'{:.0f}'.format(median_u))
+            pp.pprint('退出までの獲得効用の中央値: '+'{:.0f}'.format(median_u))
             # 母分散を計算
             mean_u = statistics.mean(stats['total_utils_aly'])
-            pp.pprint('退出までの獲得利得の平均: '+'{:.4f}'.format(mean_u))
+            pp.pprint('退出までの獲得効用の平均: '+'{:.4f}'.format(mean_u))
             # 母分散を計算
             pvar_u = statistics.pvariance(stats['total_utils_aly'])
-            pp.pprint('退出までの獲得利得の分散(母分散): '+'{:.4f}'.format(pvar_u))
+            pp.pprint('退出までの獲得効用の分散(母分散): '+'{:.4f}'.format(pvar_u))
             pp.pprint('===================================')
 
             if csv_req :

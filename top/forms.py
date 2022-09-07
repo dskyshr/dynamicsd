@@ -35,7 +35,7 @@ INIT_DIST_CHOICES = (
 )
 # メカニズム
 MECHANISM = (
-    (1, "複合優先順序メカニズム"),
+    (1, "複合優先付き制約者優先SDメカニズム"),
     (2, "確率的ボストンメカニズム"),
 )
 # CSVファイルの出力
@@ -47,7 +47,7 @@ CSV_WRITE_MODE = (
 class ConditionsForm(forms.Form):
     # 市場参加者数
     participants = forms.IntegerField(
-        label='Number of Participants',
+        label='Number of Market Participants',
         widget=forms.TextInput(),
         initial=8519,
     )
@@ -65,7 +65,7 @@ class ConditionsForm(forms.Form):
         choices=MECHANISM,
     )
     csv = forms.BooleanField(
-        label='Print as CSV file',
+        label='Print as a CSV file',
         required=False,
         disabled=False,
         initial=1,
